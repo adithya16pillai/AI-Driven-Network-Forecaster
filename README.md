@@ -22,3 +22,14 @@
 3. Model Training: Automated retraining pipeline with model versioning
 4. Inference: Real-time predictions served via API
 5. Visualization: Interactive dashboards with real-time updates
+
+### Components
+
+(Insert Image here)
+
+## Tech Stack
+
+* Frontend: React.js, Chart.js, Axios
+* Backend: Python 3.9+, FastAPI, PostgreSQL, Redis
+* Machine Learning: scikit-learn, Pandas, NumPy, pysnmp, Prophet
+* Infrastructure: Docker, NGINX
