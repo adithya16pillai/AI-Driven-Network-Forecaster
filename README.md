@@ -14,3 +14,11 @@
 * Multi-node Support: Monitor and predict across multiple network nodes
 
 ## Architecture 
+
+### Data Flow
+
+1. Data Collection: Network metrics collected via SNMP, NetFlow, and custom agents
+2. Data Processing: Real-time stream processing and feature engineering
+3. Model Training: Automated retraining pipeline with model versioning
+4. Inference: Real-time predictions served via API
+5. Visualization: Interactive dashboards with real-time updates
