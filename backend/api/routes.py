@@ -58,3 +58,63 @@ async def get_latest_metrics(device_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Device not found")
     
     return metrics
+
+@router.post("/models/train")
+async def train_models(
+    device_id: Optional[str] = None,
+    metric_name: Optional[str] = None
+):
+    """Train ML models"""
+    trainer = ModelTrainer()
+    
+    try:
+        if device_id and metric_name:
+            # Train specific model
+            result = trainer.train_single_model(device_id, metric_name)
+            return {"results": [result]}
+        else:
+            # Train all models
+            results = trainer.train_all_models()
+            return {"results": results}
+    finally:
+        trainer.close()
+
+@router.get("/predictions/{device_id}/{metric_name}", response_model=List[PredictionResponse])
+async def get_predictions(
+    device_id: str,
+    metric_name: str,
+    hours_ahead: int = Query(4, le=24)
+):
+    """Get predictions for a device and metric"""
+    predictor = PredictionService()
+    
+    try:
+        # Try to get stored predictions first
+        predictions = predictor.get_stored_predictions(device_id, metric_name)
+        
+        # If no stored predictions or they're old, generate new ones
+        if not predictions:
+            predictions = predictor.generate_and_store_predictions(
+                device_id, metric_name, hours_ahead
+            )
+        
+        return predictions
+    finally:
+        predictor.close()
+
+@router.post("/predictions/{device_id}/{metric_name}/generate")
+async def generate_predictions(
+    device_id: str,
+    metric_name: str,
+    hours_ahead: int = Query(4, le=24)
+):
+    """Generate new predictions for a device and metric"""
+    predictor = PredictionService()
+    
+    try:
+        predictions = predictor.generate_and_store_predictions(
+            device_id, metric_name, hours_ahead
+        )
+        return {"predictions": predictions, "count": len(predictions)}
+    finally:
+        predictor.close()
