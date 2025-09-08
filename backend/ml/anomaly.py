@@ -87,7 +87,6 @@ class AnomalyDetector:
             logger.warning(f"No anomaly model found for {model_key}")
             return []
         
-        # Get recent data
         df = self.data_processor.fetch_time_series(
             device_id, metric_name, days_back=recent_hours/24
         )
@@ -95,22 +94,18 @@ class AnomalyDetector:
         if df.empty:
             return []
         
-        # Prepare features
         df_features = self.prepare_features(df)
         
         if df_features.empty:
             return []
         
-        # Scale features
         scaler = self.scalers[model_key]
         features_scaled = scaler.transform(df_features)
         
-        # Predict anomalies
         model = self.models[model_key]
         anomaly_scores = model.decision_function(features_scaled)
         predictions = model.predict(features_scaled)
         
-        # Identify anomalies
         anomalies = []
         for i, (score, pred) in enumerate(zip(anomaly_scores, predictions)):
             if pred == -1:  # Anomaly
