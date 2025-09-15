@@ -3,6 +3,7 @@ import { api, DeviceStatus, NetworkMetric, Prediction } from '../services/api';
 import { DeviceCard } from '../components/DeviceCard';
 import { MetricChart } from '../components/MetricChart';
 import { useWebSocket } from '../hooks/useWebSocket';
+import './Dashboard.css';
 
 export const Dashboard: React.FC = () => {
   const [devices, setDevices] = useState<DeviceStatus[]>([]);
@@ -106,181 +107,147 @@ export const Dashboard: React.FC = () => {
   }, {} as Record<string, NetworkMetric[]>);
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>Network Forecaster Dashboard</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            backgroundColor: isConnected ? 'green' : 'red'
-          }} />
-          <span style={{ fontSize: '14px', color: '#666' }}>
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </span>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
-        {/* Device List */}
-        <div>
-          <h2>Devices ({devices.length})</h2>
-          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            {devices.map(device => (
-              <DeviceCard
-                key={device.device_id}
-                device={device}
-                onClick={handleDeviceSelect}
-              />
-            ))}
+    <div className="dashboard">
+      <header className="dashboard-header">
+        <div className="header-content">
+          <h1 className="dashboard-title">Network Forecaster Dashboard</h1>
+          <div className="connection-status">
+            <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`} />
+            <span className="status-text">
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </span>
           </div>
         </div>
+      </header>
 
-        {/* Device Details */}
-        <div>
-          {selectedDevice ? (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2>Device: {selectedDevice}</h2>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={handleGeneratePredictions}
-                    disabled={loading || metrics.length === 0}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? 0.6 : 1
-                    }}
-                  >
-                    Generate Predictions
-                  </button>
-                  <button
-                    onClick={handleTrainModels}
-                    disabled={loading || metrics.length === 0}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? 0.6 : 1
-                    }}
-                  >
-                    Train Models
-                  </button>
+      <main className="dashboard-main">
+        <div className="dashboard-grid">
+          {/* Device List Section */}
+          <aside className="devices-section">
+            <div className="section-header">
+              <h2 className="section-title">Devices</h2>
+              <span className="device-count">{devices.length} connected</span>
+            </div>
+            <div className="devices-list">
+              {devices.map(device => (
+                <DeviceCard
+                  key={device.device_id}
+                  device={device}
+                  onClick={handleDeviceSelect}
+                  isSelected={selectedDevice === device.device_id}
+                />
+              ))}
+              {devices.length === 0 && (
+                <div className="empty-state">
+                  <p>No devices found</p>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* Main Content Section */}
+          <section className="content-section">
+            {selectedDevice ? (
+              <div className="device-details">
+                <div className="device-header">
+                  <div className="device-info">
+                    <h2 className="device-name">Device: {selectedDevice}</h2>
+                    <span className="device-status">Active</span>
+                  </div>
+                  <div className="action-buttons">
+                    <button
+                      onClick={handleGeneratePredictions}
+                      disabled={loading || metrics.length === 0}
+                      className="btn btn-primary"
+                    >
+                      Generate Predictions
+                    </button>
+                    <button
+                      onClick={handleTrainModels}
+                      disabled={loading || metrics.length === 0}
+                      className="btn btn-secondary"
+                    >
+                      Train Models
+                    </button>
+                  </div>
+                </div>
+
+                {loading && (
+                  <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Loading metrics...</p>
+                  </div>
+                )}
+
+                {!loading && metrics.length === 0 && (
+                  <div className="empty-state">
+                    <h3>No Data Available</h3>
+                    <p>No metrics available for this device</p>
+                  </div>
+                )}
+
+                {!loading && metrics.length > 0 && (
+                  <div className="metrics-container">
+                    <h3 className="metrics-title">Metrics & Predictions</h3>
+                    <div className="metrics-grid">
+                      {Object.entries(groupedMetrics).map(([metricName, metricData]) => (
+                        <div key={metricName} className="metric-card">
+                          <div className="metric-header">
+                            <h4 className="metric-name">{metricName}</h4>
+                          </div>
+                          
+                          <div className="chart-container">
+                            <MetricChart
+                              metrics={metricData}
+                              predictions={predictions.filter(p => p.metric_name === metricName)}
+                              title={`${metricName} Trends`}
+                            />
+                          </div>
+                          
+                          {/* Metric Statistics */}
+                          <div className="metric-stats">
+                            <div className="stat-item">
+                              <span className="stat-label">Current</span>
+                              <span className="stat-value">
+                                {metricData[0]?.value.toFixed(2)} {metricData[0]?.unit}
+                              </span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">Average</span>
+                              <span className="stat-value">
+                                {(metricData.reduce((sum, m) => sum + m.value, 0) / metricData.length).toFixed(2)} {metricData[0]?.unit}
+                              </span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">Data Points</span>
+                              <span className="stat-value">{metricData.length}</span>
+                            </div>
+                            {predictions.length > 0 && (
+                              <div className="stat-item prediction">
+                                <span className="stat-label">Next Prediction</span>
+                                <span className="stat-value">
+                                  {predictions[0]?.predicted_value.toFixed(2)} {metricData[0]?.unit}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="device-placeholder">
+                <div className="placeholder-content">
+                  <h3>Select a Device</h3>
+                  <p>Choose a device from the list to view its metrics and predictions</p>
                 </div>
               </div>
-
-              {loading && (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <div>Loading metrics...</div>
-                </div>
-              )}
-
-              {!loading && metrics.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                  No metrics available for this device
-                </div>
-              )}
-
-              {!loading && metrics.length > 0 && (
-                <div>
-                  <h3>Metrics & Predictions</h3>
-                  {Object.entries(groupedMetrics).map(([metricName, metricData]) => (
-                    <div key={metricName} style={{ marginBottom: '30px' }}>
-                      <div style={{
-                        backgroundColor: '#f8f9fa',
-                        padding: '20px',
-                        borderRadius: '8px',
-                        border: '1px solid #dee2e6'
-                      }}>
-                        <MetricChart
-                          metrics={metricData}
-                          predictions={predictions.filter(p => p.metric_name === metricName)}
-                          title={`${metricName} - ${selectedDevice}`}
-                        />
-                      </div>
-                      
-                      {/* Metric Statistics */}
-                      <div style={{ 
-                        marginTop: '10px', 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
-                        gap: '10px' 
-                      }}>
-                        <div style={{ 
-                          padding: '10px', 
-                          backgroundColor: '#e3f2fd', 
-                          borderRadius: '4px',
-                          textAlign: 'center'
-                        }}>
-                          <div style={{ fontSize: '12px', color: '#666' }}>Current</div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                            {metricData[0]?.value.toFixed(2)} {metricData[0]?.unit}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          padding: '10px', 
-                          backgroundColor: '#e8f5e8', 
-                          borderRadius: '4px',
-                          textAlign: 'center'
-                        }}>
-                          <div style={{ fontSize: '12px', color: '#666' }}>Average</div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                            {(metricData.reduce((sum, m) => sum + m.value, 0) / metricData.length).toFixed(2)} {metricData[0]?.unit}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          padding: '10px', 
-                          backgroundColor: '#fff3e0', 
-                          borderRadius: '4px',
-                          textAlign: 'center'
-                        }}>
-                          <div style={{ fontSize: '12px', color: '#666' }}>Data Points</div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                            {metricData.length}
-                          </div>
-                        </div>
-                        {predictions.length > 0 && (
-                          <div style={{ 
-                            padding: '10px', 
-                            backgroundColor: '#fce4ec', 
-                            borderRadius: '4px',
-                            textAlign: 'center'
-                          }}>
-                            <div style={{ fontSize: '12px', color: '#666' }}>Next Prediction</div>
-                            <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                              {predictions[0]?.predicted_value.toFixed(2)} {metricData[0]?.unit}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '60px 20px', 
-              color: '#666',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '8px',
-              border: '2px dashed #dee2e6'
-            }}>
-              <h3 style={{ margin: '0 0 10px 0' }}>Select a Device</h3>
-              <p style={{ margin: 0 }}>Choose a device from the list to view its metrics and predictions</p>
-            </div>
-          )}
+            )}
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
