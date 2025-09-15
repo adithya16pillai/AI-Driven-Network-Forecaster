@@ -22,7 +22,6 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Simulate real-time network data
   useEffect(() => {
     const interval = setInterval(() => {
       const newMetric: NetworkMetrics = {
@@ -41,7 +40,6 @@ function App() {
 
   const generateForecast = async () => {
     setLoading(true);
-    // Simulate API call to ML model
     setTimeout(() => {
       const forecast: ForecastData = {
         predictedBandwidth: Array.from({length: 24}, () => Math.random() * 100 + 50),
@@ -69,7 +67,6 @@ function App() {
       </header>
 
       <main className="main-content">
-        {/* Real-time Metrics Dashboard */}
         <section className="metrics-section">
           <h2>Real-time Network Metrics</h2>
           <div className="metrics-grid">
@@ -107,7 +104,6 @@ function App() {
           </div>
         </section>
 
-        {/* Chart Visualization */}
         <section className="chart-section">
           <h2>Network Performance Trends</h2>
           <div className="chart-container">
@@ -126,7 +122,6 @@ function App() {
           </div>
         </section>
 
-        {/* AI Forecasting Section */}
         <section className="forecast-section">
           <div className="forecast-header">
             <h2>AI Network Forecasting</h2>
@@ -177,7 +172,6 @@ function App() {
           )}
         </section>
 
-        {/* Control Panel */}
         <section className="control-section">
           <h2>Network Controls</h2>
           <div className="controls-grid">

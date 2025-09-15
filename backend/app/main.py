@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 import logging
-from .database import engine, get_db
-from .models import Base
-from .config import settings
-from fastapi import WebSocket, WebSocketDisconnect
 import json
 import asyncio
+from typing import List
+
+from .database import engine, get_db, SessionLocal
+from .models import Base, NetworkMetric
+from .config import settings
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -31,22 +33,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def root():
-    return {"message": "AI Network Forecaster API"}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-# Include API routes
-from .api.routes import router
-app.include_router(router, prefix="/api/v1")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -56,20 +42,30 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
-        for connection in self.active_connections:
+        for connection in self.active_connections[:]:  # Create a copy to iterate
             try:
                 await connection.send_text(message)
             except:
                 # Remove broken connections
-                self.active_connections.remove(connection)
+                if connection in self.active_connections:
+                    self.active_connections.remove(connection)
 
 manager = ConnectionManager()
+
+@app.get("/")
+async def root():
+    return {"message": "AI Network Forecaster API"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -95,8 +91,18 @@ async def websocket_endpoint(websocket: WebSocket):
                 } for m in latest_metrics]
                 
                 await manager.send_personal_message(json.dumps(data), websocket)
+            except Exception as e:
+                logger.error(f"Error fetching metrics: {e}")
             finally:
                 db.close()
                 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+# Include API routes
+from .api.routes import router
+app.include_router(router, prefix="/api/v1")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
