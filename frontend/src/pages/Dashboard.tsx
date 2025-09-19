@@ -77,7 +77,6 @@ export const Dashboard: React.FC = () => {
     try {
       const metricName = metrics[0].metric_name;
       await api.generatePredictions(selectedDevice, metricName, 4);
-      // Reload predictions after generation
       loadPredictions(selectedDevice, metricName);
     } catch (error) {
       console.error('Error generating predictions:', error);
